@@ -43,3 +43,7 @@
 型チェック、19件の単体テスト、productionビルド、公式マニフェスト検証、リソース参照、localhost HTTPS配信は成功。これはExcel実機での成功を意味しない。
 
 実行用依存のnpm監査は0件。開発用サイドロードCLIの推移依存にHigh 8件が残り、通常のaudit fixでは解消しない。実機確認の前にツール更新と監査を再確認する。詳細は[移行記録](sheetdock-web-phase1a.md)を参照。
+
+## Phase 1-B②での更新
+
+上記の「今回」はPhase 1-A作業時点の記録。現在、Phase 1-Aの基本機能5項目についてユーザーからWeb版Excelでの成功報告を受けています。高度な操作の結果と最新のテスト件数は[sheetdock-web-phase1b.md](sheetdock-web-phase1b.md)を参照してください。

@@ -1,3 +1,4 @@
+import { subscribeSnapshot } from "./snapshotBus";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SheetInfo } from "../domain/sheets";
 import { ensureExcelReady, errorMessage } from "../excel/environment";
@@ -10,6 +11,9 @@ export function useWorksheets() {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasSnapshot, setHasSnapshot] = useState(false);
+  useEffect(() => subscribeSnapshot(notice => {
+    setSheets(notice.sheets); setHasSnapshot(!notice.error); setError(notice.error ?? null);
+  }), []);
   const locked = useRef(false);
   const mounted = useRef(false);
   useEffect(() => {

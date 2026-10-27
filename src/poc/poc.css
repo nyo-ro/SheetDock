@@ -1,0 +1,7 @@
+.poc-panel { margin: 16px; padding: 12px; border: 2px dashed #926000; background: #fffcf4; font: 13px "Segoe UI", sans-serif; }
+.poc-panel h2 { font-size: 17px; }
+.poc-panel label { display: block; margin: 10px 0; }
+.poc-panel input:not([type=checkbox]), .poc-panel textarea, .poc-panel select { display: block; max-width: 100%; width: 100%; }
+.poc-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 300px; overflow: auto; font-size: 11px; }
+.poc-panel button { margin: 5px; padding: 6px; }
+.poc-panel [role=alert] { color: #a4262c; overflow-wrap: anywhere; }
