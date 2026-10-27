@@ -6,10 +6,10 @@ import { CoalescedRefresh } from "../sync/coalescedRefresh";
 import { groupOrder, positionPlan } from "../domain/movePlan";
 import { Action, BookSnapshot, describeError } from "./model";
 import { applyAction, observeBook } from "./officeAdapter";
-import { ExperimentOptions, runExperiment } from "./experiment";
+import { runExperiment } from "./experiment";
 import { EventRecord, eventLifecycle, eventSets, listenEvents } from "./events";
 import "./poc.css";
-interface Plan { baseline: BookSnapshot; actions: Action[]; options: ExperimentOptions }
+import { ConfirmationDialog, OperationPlan } from "./ConfirmationDialog";
 export function Panel() {
   const [enabled,setEnabled] = useState(false);
   const [onlyWorksheets,setOnlyWorksheets] = useState(false);
@@ -24,7 +24,9 @@ export function Panel() {
   const [nameProbe,setNameProbe] = useState("");
   const [failureStep,setFailureStep] = useState("0");
   const [failureWhen,setFailureWhen] = useState<"before"|"after">("before");
-  const [plan,setPlan] = useState<Plan>();
+  const [plan,setPlan] = useState<OperationPlan>();
+  const [confirmation,setConfirmation] = useState<OperationPlan>();
+  const pendingConfirmation = useRef<OperationPlan>();
   const [output,setOutput] = useState<unknown>();
   const [fault,setFault] = useState<string>();
   const [refreshCount,setRefreshCount] = useState(0);
@@ -91,10 +93,26 @@ export function Panel() {
       setFault(undefined);
     } catch (error) { setFault(JSON.stringify(describeError(error))); }
   }
-  async function execute() {
-    if (!plan || !enabled || !onlyWorksheets || bookName !== plan.baseline.name) throw new Error("検証ブックの有効化・種類確認・ブック名の一致が必要です。");
-    if (!window.confirm(`検証用ブック「${bookName}」へ ${plan.actions.length} ステップを実行します。\n${JSON.stringify(plan.actions)}\n削除は元に戻せる保証がありません。VeryHiddenの復元も保証しません。実行しますか？`)) return;
-    const selectedPlan = plan; setPlan(undefined); setOutput(undefined);
+  function cancelConfirmation() {
+    pendingConfirmation.current = undefined;
+    setConfirmation(undefined);
+  }
+  function requestConfirmation() {
+    if (!canRun || lock.current || pendingConfirmation.current || !plan) return;
+    const frozenPlan = structuredClone(plan);
+    pendingConfirmation.current = frozenPlan;
+    setConfirmation(frozenPlan);
+  }
+  function confirmExecution() {
+    const selectedPlan = pendingConfirmation.current;
+    if (!selectedPlan || lock.current) return;
+    // Reactの再描画より前に確認を消費して、連打や古いイベントからの再実行を防ぐ。
+    cancelConfirmation();
+    void task(() => execute(selectedPlan));
+  }
+  async function execute(selectedPlan: OperationPlan) {
+    if (!enabled || !onlyWorksheets || bookName !== selectedPlan.baseline.name) throw new Error("検証ブックの有効化・種類確認・ブック名の一致が必要です。");
+    setPlan(undefined); setOutput(undefined);
     await ensureExcelReady();
     await withExcelLock(async () => {
       const result = await runExperiment({read:observeBook,apply:applyAction},selectedPlan.baseline,selectedPlan.actions,{...selectedPlan.options,worksheetsOnly:onlyWorksheets});
@@ -104,18 +122,18 @@ export function Panel() {
       }
     });
   }
-  const canRun = !!plan && enabled && onlyWorksheets && bookName === plan.baseline.name && !busy;
+  const canRun = !!plan && enabled && onlyWorksheets && bookName === plan.baseline.name && !busy && !confirmation;
   return <section className="poc-panel" aria-label="Office.js技術検証">
     <h2>Office.js技術検証（開発専用）</h2>
     <p>専用の使い捨て検証ブックのみで使用してください。実機検証完了・安全性保証を意味しません。</p>
-    <button disabled={busy} onClick={() => void task(refresh)}>観測・再取得（変更なし）</button>
-    <label><input type="checkbox" checked={auto} disabled={busy} onChange={e => void task(() => toggleAuto(e.target.checked))} />イベント自動同期を検証</label>
+    <button disabled={busy || !!confirmation} onClick={() => void task(refresh)}>観測・再取得（変更なし）</button>
+    <label><input type="checkbox" checked={auto} disabled={busy || !!confirmation} onChange={e => void task(() => toggleAuto(e.target.checked))} />イベント自動同期を検証</label>
     <p>取得回数: {refreshCount} ／履歴は直近150件。ブック構成保護は操作前・手動・フォーカス復帰で再取得。</p>
     <details><summary>対応API情報</summary><pre>{JSON.stringify({eventSets,required:"ExcelApi 1.17",supported:typeof Office !== "undefined" && !!Office.context?.requirements?.isSetSupported("ExcelApi","1.17")},null,2)}</pre></details>
     <details open><summary>ワークシート観測値</summary><pre>{JSON.stringify(snapshot,null,2) ?? "未取得"}</pre></details>
     <label>名前重複の観測<input value={nameProbe} onChange={e => setNameProbe(e.target.value)} /></label>
     <p>{nameProbe && snapshot ? (snapshot.sheets.some(s => s.name.toLowerCase() === nameProbe.toLowerCase()) ? "通常ワークシート内に同名あり" : "通常ワークシート内に一致なし。グラフシートとの重複・名前の利用可否は不明。") : "名前チェックは読み取り専用です。"}</p>
-    <fieldset disabled={busy}>
+    <fieldset disabled={busy || !!confirmation}>
       <legend>変更操作の明示的な有効化</legend>
       <label><input type="checkbox" checked={enabled} onChange={e => {setEnabled(e.target.checked);setPlan(undefined);}} />使い捨て検証ブックで変更操作を行う</label>
       <label><input type="checkbox" checked={onlyWorksheets} onChange={e => {setOnlyWorksheets(e.target.checked);setPlan(undefined);}} />通常ワークシートのみのブックと自分で確認した（混在・不明ではチェックしない）</label>
@@ -130,8 +148,9 @@ export function Panel() {
       <label>合成失敗のステップ番号（0=無効、1から）<input type="number" min="0" value={failureStep} onChange={e => {setFailureStep(e.target.value);setPlan(undefined);}} /></label>
       <select aria-label="合成失敗のタイミング" value={failureWhen} onChange={e => {setFailureWhen(e.target.value as "before"|"after");setPlan(undefined);}}><option value="before">書き込み前</option><option value="after">書き込み後・確認前</option></select>
       <button onClick={prepare} disabled={!enabled || !snapshot}>計画を作成（変更なし）</button>
-      <button onClick={() => void task(execute)} disabled={!canRun}>確認して実行</button>
+      <button onClick={requestConfirmation} disabled={!canRun}>確認して実行</button>
     </fieldset>
+    {confirmation && <ConfirmationDialog plan={confirmation} onCancel={cancelConfirmation} onExecute={confirmExecution} />}
     {fault && <p role="alert">{fault}</p>}
     <details open><summary>計画（再取得しても固定・不一致は中断）</summary><pre>{JSON.stringify(plan,null,2)}</pre></details>
     <details open><summary>操作前後・結果・エラー（手動コピーして記録）</summary><pre>{JSON.stringify(output,null,2)}</pre></details>
