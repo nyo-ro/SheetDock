@@ -1,0 +1,17 @@
+html, body { margin: 0; padding: 0; background: #fff; color: #242424; font-family: "Segoe UI", "Yu Gothic UI", sans-serif; }
+* { box-sizing: border-box; }
+main { padding: 16px; min-width: 220px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+h1 { font-size: 22px; margin: 0; }
+.search { display: flex; gap: 6px; margin: 6px 0 16px; }
+.search > :first-child { flex: 1; min-width: 0; }
+.sheets { list-style: none; padding: 0; margin: 0; }
+.sheet { width: 100%; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 12px 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 4px; background: white; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.sheet:hover:not(:disabled) { background: #edf5f5; }
+.sheet[aria-current="true"] { border-left: 4px solid #007c78; background: #e5f3f2; }
+.sheet:disabled { cursor: default; color: #666; }
+.sheet:focus-visible { outline: 2px solid #007c78; outline-offset: 2px; }
+.sheet-name { overflow-wrap: anywhere; }
+.sheet-state { font-size: 11px; flex-shrink: 0; }
+.error { color: #a4262c; background: #fde7e9; padding: 10px; overflow-wrap: anywhere; }
+footer { font-size: 12px; color: #616161; margin-top: 20px; }

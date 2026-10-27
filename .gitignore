@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.local-tools/
+.certificates/
+coverage/
+*.log
+*.pfx
+*.p12
+*.key
+*.pem
+.env
+.env.*
+.vscode/*.local.json
+.DS_Store
