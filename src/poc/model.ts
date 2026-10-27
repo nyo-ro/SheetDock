@@ -2,7 +2,7 @@ import { SheetInfo, SheetVisibility } from "../domain/sheets";
 export interface ObservedSheet extends SheetInfo { protected: boolean }
 export interface BookSnapshot {
   name: string; readOnly: boolean; structureProtected: boolean; sheets: ObservedSheet[];
-  activeId: string | null; activeError?: string; capturedAt: string;
+  totalSheets?: number | null; activeId: string | null; activeError?: string; capturedAt: string;
 }
 export type Action = { kind: "visibility"; id: string; visibility: SheetVisibility }
   | { kind: "copy" | "delete"; id: string }
@@ -45,4 +45,9 @@ export function assertAction(book: BookSnapshot, action: Action): void {
   }
   if (action.kind === "delete" && target.visibility === "VeryHidden") throw new Error("VeryHiddenはHiddenへ変更してから削除する必要があります。");
   if (action.kind === "move" && (!Number.isInteger(action.position) || action.position < 0 || action.position >= book.sheets.length)) throw new Error("移動先の範囲が不正です。");
+}
+
+export function assertMoveWorkbook(book: BookSnapshot): void {
+  if (!Number.isInteger(book.totalSheets) || book.totalSheets !== book.sheets.length || !book.sheets.length)
+    throw new Error("総シート数が不明または不一致です。未対応シート混在を否定できないため移動を中止します。");
 }

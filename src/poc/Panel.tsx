@@ -138,6 +138,15 @@ export function Panel() {
       <label><input type="checkbox" checked={enabled} onChange={e => {setEnabled(e.target.checked);setPlan(undefined);}} />使い捨て検証ブックで変更操作を行う</label>
       <label><input type="checkbox" checked={onlyWorksheets} onChange={e => {setOnlyWorksheets(e.target.checked);setPlan(undefined);}} />通常ワークシートのみのブックと自分で確認した（混在・不明ではチェックしない）</label>
       <label>確認用ブック名（観測値と完全一致）<input value={bookName} onChange={e => setBookName(e.target.value)} /></label>
+      <fieldset><legend>対象シートを名前で選択</legend>
+        {snapshot?.sheets.map(sheet => <label key={sheet.id}><input type="checkbox" aria-label={`対象シート ${sheet.name}`}
+          checked={target.split(/[,\n]/).map(id=>id.trim()).includes(sheet.id)}
+          onChange={e=>{const ids=target.split(/[,\n]/).map(id=>id.trim()).filter(Boolean);setTarget((e.target.checked ? [...ids,sheet.id] : ids.filter(id=>id!==sheet.id)).join(","));setPlan(undefined);}} />{sheet.name}（{sheet.visibility}）</label>)}
+      </fieldset>
+      {kind === "move" && <label>移動先を名前で選択<select value={boundary} onChange={e=>{setBoundary(e.target.value);setPlan(undefined);}}>
+        {snapshot?.sheets.map((sheet,index)=><option key={sheet.id} value={index}>{index===0 ? "先頭：" : ""}{sheet.name} の前</option>)}
+        <option value={snapshot?.sheets.length ?? 0}>末尾</option>
+      </select></label>}
       <label>対象ID（移動はカンマ区切りで複数指定）<textarea value={target} onChange={e => {setTarget(e.target.value);setPlan(undefined);}} /></label>
       <label>操作<select value={kind} onChange={e => {setKind(e.target.value);setPlan(undefined);}}>
         <option>Visible</option><option>Hidden</option><option>VeryHidden</option>

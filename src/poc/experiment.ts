@@ -1,4 +1,4 @@
-import { Action, BookSnapshot, ExperimentResult, assertAction, assertFresh, assertWritable, describeError, fingerprint } from "./model";
+import { Action, BookSnapshot, ExperimentResult, assertAction, assertMoveWorkbook, assertFresh, assertWritable, describeError, fingerprint } from "./model";
 export interface ExperimentAdapter { read(): Promise<BookSnapshot>; apply(action: Action): Promise<void> }
 export interface ExperimentOptions {
   worksheetsOnly: boolean; expectedOrder?: string[]; veryHiddenDeleteId?: string;
@@ -26,6 +26,7 @@ function verifyChange(before: BookSnapshot, after: BookSnapshot, action: Action)
 }
 export async function runExperiment(adapter: ExperimentAdapter, baseline: BookSnapshot, actions: Action[], options: ExperimentOptions): Promise<ExperimentResult> {
   const result: ExperimentResult = { before: baseline, steps: actions.map(action => ({action,status:"unprocessed"})), safeForProduction: false, expectedOrder: options.expectedOrder };
+  const moving = !!options.expectedOrder || actions.some(action => action.kind === "move");
   let expected = baseline;
   let failed = false;
   for (let i = 0; i < actions.length; i++) {
@@ -33,10 +34,12 @@ export async function runExperiment(adapter: ExperimentAdapter, baseline: BookSn
     try {
       const current = await adapter.read(); step.before = current;
       assertFresh(expected, current); assertWritable(current, options.worksheetsOnly); assertAction(current, step.action);
+      if (moving) assertMoveWorkbook(current);
       if (options.injectFailure?.step === i + 1 && options.injectFailure.when === "before") throw new Error("SyntheticFailure: 書き込み前の検証用エラー");
       dispatched = true; await adapter.apply(step.action);
       if (options.injectFailure?.step === i + 1 && options.injectFailure.when === "after") throw new Error("SyntheticFailure: 書き込み後・結果確認前の検証用エラー");
       const after = await adapter.read(); step.after = after; result.after = after;
+      if (moving) assertMoveWorkbook(after);
       verifyChange(current, after, step.action);
       expected = after; step.status = "success";
     } catch (error) {
@@ -48,7 +51,7 @@ export async function runExperiment(adapter: ExperimentAdapter, baseline: BookSn
     }
   }
   if (!actions.length) {
-    result.after = await adapter.read(); assertFresh(baseline, result.after); assertWritable(result.after, options.worksheetsOnly);
+    result.after = await adapter.read(); assertFresh(baseline, result.after); assertWritable(result.after, options.worksheetsOnly); if (moving) assertMoveWorkbook(result.after);
   }
   // ベストエフォート復元。全例での保証はないので本番採用不可。
   if (failed && options.veryHiddenDeleteId) {

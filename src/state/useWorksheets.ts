@@ -78,11 +78,10 @@ export function useWorksheets() {
   const refresh=()=>run(()=>refreshRef.current());
   const activate=(id:string)=>run(async()=>{const started=epoch.current;await activateWorksheet(id);const next=await readWorkbookState();if(mounted.current && epoch.current===started)apply(next);else refreshQueue.current?.request();});
   const move=(baseline:WorkbookState,id:string,boundary:number,dragEpoch:number)=>run(async()=>{
-    if(query)throw new Error("検索をクリアしてから移動してください。");
     const outcome=await reorderWorksheet(baseline,id,boundary,()=>mounted.current && epoch.current===dragEpoch);
     if(mounted.current){if(epoch.current===dragEpoch)apply(outcome.state);else refreshQueue.current?.request();if(outcome.error)setError(outcome.error);}
   });
   return {sheets:snapshot?.sheets??[],snapshot,query,setQuery,ready,busy,error:error ?? readError,syncError,hasSnapshot:!!snapshot,
-    moveDisabledReason:query ? "検索中は並び替えできません。検索をクリアしてください。" : syncError || (snapshot ? moveRestriction(snapshot) : "ブック状態を取得中です。"),
+    moveDisabledReason:syncError || (snapshot ? moveRestriction(snapshot) : "ブック状態を取得中です。"),
     refresh,activate,move,dragEpoch:()=>epoch.current};
 }

@@ -21,6 +21,12 @@ export async function observeBook(): Promise<BookSnapshot> {
       snapshot.activeError = "アクティブIDが通常ワークシート一覧にありません。"; snapshot.activeId = null;
     }
   } catch (error) { snapshot.activeError = JSON.stringify(describeError(error)); }
+  try {
+    snapshot.totalSheets = await Excel.run(async context => {
+      const count = context.workbook.functions.sheets(); count.load("value,error"); await context.sync();
+      return !count.error && Number.isInteger(count.value) && count.value > 0 ? count.value : null;
+    });
+  } catch { snapshot.totalSheets = null; }
   snapshot.sheets.forEach(s => { s.isActive = s.id === snapshot.activeId; });
   return snapshot;
 }

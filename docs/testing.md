@@ -1,5 +1,7 @@
 # テストと制約
 
+最新の実機報告・検索中移動・複数移動PoCの手順は[こちら](filtered-reorder-multi-poc.md)。以下の旧確認表は初期段階の履歴で、現在の確認済み範囲はリンク先を優先する。
+
 ## 自動検証
 
 `npm run typecheck`、`npm test`、`npm run build`、`npm run validate`を実行する。

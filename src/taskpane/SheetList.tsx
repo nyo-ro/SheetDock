@@ -4,33 +4,36 @@ import { WorkbookState, stateSignature } from "../domain/workbookState";
 import { groupOrder } from "../domain/movePlan";
 const dragType="application/x-sheetdock-worksheet";
 interface Props {
-  sheets:SheetInfo[]; snapshot?:WorkbookState; busy:boolean; disabledReason:string|null;
+  sheets:SheetInfo[]; queryKey?:string; snapshot?:WorkbookState; busy:boolean; disabledReason:string|null;
   activate(id:string):void; move(baseline:WorkbookState,id:string,boundary:number,epoch:number):void; dragEpoch():number;
 }
-interface DragSession {id:string;baseline:WorkbookState;epoch:number;token:string}
-export function SheetList({sheets,snapshot,busy,disabledReason,activate,move,dragEpoch}:Props){
+interface DragSession {id:string;baseline:WorkbookState;epoch:number;token:string;displayed:string[];queryKey:string}
+export function SheetList({sheets,snapshot,busy,disabledReason,activate,move,dragEpoch,queryKey=""}:Props){
   const session=useRef<DragSession>();const [boundary,setBoundary]=useState<number|null>(null);
   const suppressClick=useRef(false);
   const clear=()=>{session.current=undefined;setBoundary(null);};
+  const displayedSignature=JSON.stringify(sheets.map(s=>s.id));
   const currentSignature=snapshot ? stateSignature(snapshot) : "";
-  useEffect(()=>{if(session.current && (busy || disabledReason || stateSignature(session.current.baseline)!==currentSignature))clear();},[busy,disabledReason,currentSignature]);
+  useEffect(()=>{if(session.current && (busy || disabledReason || session.current.queryKey!==queryKey || JSON.stringify(session.current.displayed)!==displayedSignature || stateSignature(session.current.baseline)!==currentSignature))clear();},[busy,disabledReason,currentSignature,displayedSignature,queryKey]);
   useEffect(()=>{const escape=(e:KeyboardEvent)=>{if(e.key==="Escape")clear();};document.addEventListener("keydown",escape);return()=>document.removeEventListener("keydown",escape);},[]);
   function start(e:DragEvent,id:string){
     if(busy || disabledReason || !snapshot || snapshot.sheets.find(s=>s.id===id)?.protected){e.preventDefault();return;}
     const token=`${Date.now()}-${Math.random()}`;
-    session.current={id,baseline:structuredClone(snapshot),epoch:dragEpoch(),token};suppressClick.current=true;
+    session.current={id,baseline:structuredClone(snapshot),epoch:dragEpoch(),token,displayed:sheets.map(s=>s.id),queryKey};suppressClick.current=true;
     e.dataTransfer.effectAllowed="move";e.dataTransfer.setData(dragType,token);
   }
   function accept(e:DragEvent):boolean {
-    return !!session.current && !busy && !disabledReason && session.current.epoch===dragEpoch() && Array.from(e.dataTransfer.types).includes(dragType);
+    return !!session.current && !busy && !disabledReason && session.current.epoch===dragEpoch() && session.current.queryKey===queryKey && JSON.stringify(session.current.displayed)===displayedSignature && Array.from(e.dataTransfer.types).includes(dragType);
   }
   function over(e:DragEvent,next:number){if(!accept(e))return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect="move";setBoundary(next);}
   function drop(e:DragEvent,next:number){
     const drag=session.current;
     if(!drag || !accept(e) || e.dataTransfer.getData(dragType)!==drag.token){clear();return;}
     e.preventDefault();e.stopPropagation();clear();
-    const full=drag.baseline.sheets.map(s=>s.id);const desired=groupOrder(full,full,[drag.id],next);
-    if(desired.some((id,i)=>id!==full[i]))move(drag.baseline,drag.id,next,drag.epoch);
+    const full=drag.baseline.sheets.map(s=>s.id);const desired=groupOrder(full,drag.displayed,[drag.id],next);
+    // 表示境界を元ブックの境界へ変換。検索末尾は最後の表示シートの直後。
+    const fullBoundary=next<drag.displayed.length ? full.indexOf(drag.displayed[next]) : full.indexOf(drag.displayed[drag.displayed.length-1])+1;
+    if(desired.some((id,i)=>id!==full[i]))move(drag.baseline,drag.id,fullBoundary,drag.epoch);
   }
   const rowBoundary=(e:DragEvent,index:number)=>{const rect=e.currentTarget.getBoundingClientRect();return index+(e.clientY>=rect.top+rect.height/2 ? 1:0);};
   return <ul className="sheets" aria-label="ワークシート一覧" onDragEnd={clear}

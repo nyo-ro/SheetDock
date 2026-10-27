@@ -12,7 +12,7 @@ vi.mock("../src/poc/events",()=>({eventSets:{},listenEvents:()=>()=>{},eventLife
 let adapter: ReturnType<typeof memoryAdapter>;
 beforeEach(()=>{
   vi.clearAllMocks(); vi.mocked(ensureExcelReady).mockResolvedValue(undefined);
-  const initial=book(); initial.name="Book 1.xlsx"; initial.sheets=initial.sheets.slice(0,3);
+  const initial=book(); initial.name="Book 1.xlsx"; initial.sheets=initial.sheets.slice(0,3); initial.totalSheets=3;
   initial.sheets.forEach((sheet,index)=>{sheet.name=`Sheet${index+1}`;});
   adapter=memoryAdapter(initial);
   vi.mocked(observeBook).mockImplementation(adapter.read);
@@ -111,4 +111,14 @@ it("ブック名完全一致と2つの確認を省略できない",async()=>{
   expect((screen.getByRole("button",{name:"確認して実行"}) as HTMLButtonElement).disabled).toBe(true);
   await user.click(screen.getByLabelText("使い捨て検証ブックで変更操作を行う"));
   expect((screen.getByRole("button",{name:"確認して実行"}) as HTMLButtonElement).disabled).toBe(true);expect(applyAction).not.toHaveBeenCalled();
+});
+
+it("名前選択だけで複数移動の計画・確認・実行ができる",async()=>{
+ const user=await prepared();await user.clear(screen.getByLabelText(/対象ID/));
+ await user.click(screen.getByLabelText("対象シート Sheet1"));await user.click(screen.getByLabelText("対象シート Sheet3"));
+ await user.selectOptions(screen.getByLabelText("移動先を名前で選択"),"3");
+ await user.click(screen.getByRole("button",{name:"計画を作成（変更なし）"}));await user.click(screen.getByRole("button",{name:"確認して実行"}));
+ const dialog=await screen.findByRole("dialog");expect(dialog.textContent).toContain("Sheet2 → Sheet1 → Sheet3");expect(applyAction).not.toHaveBeenCalled();
+ await user.click(within(dialog).getByRole("button",{name:"実行"}));await screen.findByText(/"orderMatches": true/);
+ expect((await adapter.read()).sheets.map(s=>s.name)).toEqual(["Sheet2","Sheet1","Sheet3"]);
 });

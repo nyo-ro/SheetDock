@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import { Action, BookSnapshot } from "../src/poc/model";
 export function book(): BookSnapshot {
-  return {name:"SheetDock-PoC.xlsx",readOnly:false,structureProtected:false,activeId:"a",capturedAt:"test",
+  return {totalSheets:5,name:"SheetDock-PoC.xlsx",readOnly:false,structureProtected:false,activeId:"a",capturedAt:"test",
     sheets:["a","b","c","d","e"].map((id,position) => ({id,name:id,position,visibility:"Visible",protected:false,isActive:id === "a"}))};
 }
 export function memoryAdapter(initial = book()) {

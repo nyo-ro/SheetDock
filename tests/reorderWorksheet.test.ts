@@ -29,3 +29,8 @@ it("書込API失敗は状態を再取得しエラーを返す",async()=>{sync.mo
 it("書込後の確認失敗と再取得失敗は状態不明",async()=>{vi.mocked(loadWorkbookState).mockResolvedValueOnce(workbook()).mockRejectedValue(new Error("offline"));const result=await reorderWorksheet(workbook(),"b",0);expect(result.state).toBeUndefined();expect(result.error).toContain("再取得にも失敗");});
 it("返る順序が期待と違えば失敗",async()=>{write.mockImplementation(()=>{});const result=await reorderWorksheet(workbook(),"b",0);expect(result.error).toContain("期待と一致");});
 it("アクティブ状態が不明なら拒否",()=>{current.activeId=null;expect(moveRestriction(current)).toContain("アクティブ");});
+
+it.each([["d",1,["a","d","b","c","e"]],["b",3,["a","c","b","d","e"]],["b",4,["a","c","d","b","e"]]] as [string,number,string[]][])("検索UIの全体境界で%sを移動し対象外を保持",async(id,gap,order)=>{
+ current.sheets=["a","b","c","d","e"].map((id,position)=>({...current.sheets[0],id,name:id,position,isActive:id==="a"}));current.totalSheets=5;
+ const result=await reorderWorksheet(structuredClone(current),id,gap);expect(result.error).toBeUndefined();expect(result.state?.sheets.map(s=>s.id)).toEqual(order);expect(write).toHaveBeenCalledOnce();
+});
