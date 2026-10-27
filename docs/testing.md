@@ -47,3 +47,5 @@
 ## Phase 1-B②での更新
 
 上記の「今回」はPhase 1-A作業時点の記録。現在、Phase 1-Aの基本機能5項目についてユーザーからWeb版Excelでの成功報告を受けています。高度な操作の結果と最新のテスト件数は[sheetdock-web-phase1b.md](sheetdock-web-phase1b.md)を参照してください。
+
+最新の通常UIの自動同期・単一ドラッグのテスト結果と実機手順は[worksheet-sync-reorder.md](worksheet-sync-reorder.md)を参照してください。

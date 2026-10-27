@@ -1,3 +1,4 @@
+import { SheetList } from "./SheetList";
 import { Button, FluentProvider, Input, Spinner, webLightTheme } from "@fluentui/react-components";
 import { filterSheets } from "../domain/sheets";
 import { useWorksheets } from "../state/useWorksheets";
@@ -13,19 +14,14 @@ export function App() {
       <div className="search"><Input id="sheet-search" value={state.query} onChange={(_, data) => state.setQuery(data.value)} placeholder="名前の一部を入力" />
         <Button onClick={() => state.setQuery("")} disabled={!state.query}>クリア</Button></div>
       {state.busy && <Spinner size="tiny" label="Excelから取得中…" />}
-      {state.error && <div role="alert" className="error">{state.error}<br />表示内容を確認できません。手動更新、またはタスクペインを開き直してください。</div>}
+      {state.error && <div role="alert" className="error">{state.error}<br />表示内容をExcelと照合し、必要なら手動更新してください。</div>}
+      {state.syncError && <p role="alert">{state.syncError} 手動更新で再接続を試せます。</p>}
       <p role="status">{state.hasSnapshot ? `${visible.length} / ${state.sheets.length} シート` : "一覧は未取得です。"}</p>
-      <ul className="sheets" aria-label="ワークシート一覧">
-        {visible.map(sheet => <li key={sheet.id}>
-          <button type="button" className="sheet" aria-current={sheet.isActive ? "true" : undefined}
-            disabled={state.busy || sheet.visibility !== "Visible"} onClick={() => void state.activate(sheet.id)}>
-            <span className="sheet-name">{sheet.name}</span>
-            <span className="sheet-state">{sheet.isActive ? "● アクティブ" : sheet.visibility === "Hidden" ? "非表示" : sheet.visibility === "VeryHidden" ? "完全非表示" : ""}</span>
-          </button>
-        </li>)}
-      </ul>
+      <SheetList sheets={visible} snapshot={state.snapshot} busy={state.busy} disabledReason={state.moveDisabledReason}
+        activate={id=>void state.activate(id)} move={(baseline,id,boundary,epoch)=>void state.move(baseline,id,boundary,epoch)} dragEpoch={state.dragEpoch} />
       {state.hasSnapshot && !visible.length && <p>該当するワークシートはありません。</p>}
-      <footer>Excel側の変更は「手動更新」で反映します。非表示シートは切り替えできません。独立したグラフシートは対象外です。</footer>
+      {state.moveDisabledReason && <p className="move-hint">{state.moveDisabledReason}</p>}
+      <footer>Excel側の変更を自動反映します。取得に失敗した場合は手動更新してください。非表示シートは切り替えできません。</footer>
     </main>
   </FluentProvider>;
 }
