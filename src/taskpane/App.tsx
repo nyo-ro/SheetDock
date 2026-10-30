@@ -14,10 +14,10 @@ export function App() {
       <div className="search"><Input id="sheet-search" value={state.query} onChange={(_, data) => state.setQuery(data.value)} placeholder="名前の一部を入力" />
         <Button onClick={() => state.setQuery("")} disabled={!state.query}>クリア</Button></div>
       {state.busy && <Spinner size="tiny" label="Excelから取得中…" />}
-      {state.error && <div role="alert" className="error">{state.error}<br />表示内容をExcelと照合し、必要なら手動更新してください。</div>}
+      {state.error && <div role="alert" className="error">{state.error}<br />{state.stalled ? "処理中のAPIと重ならないよう、変更操作と追加取得を待機しています。" : "表示内容をExcelと照合し、必要なら手動更新してください。"}</div>}
       {state.syncError && <p role="alert">{state.syncError} 手動更新で再接続を試せます。</p>}
       <p role="status">{state.hasSnapshot ? `${visible.length} / ${state.sheets.length} シート` : "一覧は未取得です。"}</p>
-      <SheetList queryKey={state.query} sheets={visible} snapshot={state.snapshot} busy={state.busy} disabledReason={state.moveDisabledReason}
+      <SheetList queryKey={state.query} sheets={visible} snapshot={state.snapshot} busy={state.operationBlocked} disabledReason={state.moveDisabledReason}
         activate={id=>void state.activate(id)} move={(baseline,id,boundary,epoch)=>void state.move(baseline,id,boundary,epoch)} dragEpoch={state.dragEpoch} />
       {state.hasSnapshot && !visible.length && <p>該当するワークシートはありません。</p>}
       {state.moveDisabledReason && <p className="move-hint">{state.moveDisabledReason}</p>}

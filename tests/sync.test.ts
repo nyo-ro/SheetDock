@@ -25,3 +25,12 @@ it("手動更新・自動更新・変更操作を直列化し、失敗後も処�
   await Promise.resolve();expect(order).toEqual(["start"]);release();await first;await caught;
   await withExcelLock(async()=>{order.push("last");});expect(order).toEqual(["start","end","next","last"]);
 });
+
+it("初回・手動要求とイベントを一つの実行へまとめる",async()=>{
+ vi.useFakeTimers();let finish!:()=>void;const read=vi.fn(()=>new Promise<void>(r=>{finish=r;}));const queue=new CoalescedRefresh(read,vi.fn());
+ const initial=queue.runNow();await Promise.resolve();queue.request();const manual=queue.runNow();await vi.advanceTimersByTimeAsync(500);expect(read).toHaveBeenCalledOnce();
+ finish();await initial;await manual;await vi.advanceTimersByTimeAsync(150);expect(read).toHaveBeenCalledTimes(2);finish();queue.stop();
+});
+it("未完了の更新があっても終了後は再実行しない",async()=>{
+ vi.useFakeTimers();let finish!:()=>void;const read=vi.fn(()=>new Promise<void>(r=>{finish=r;}));const queue=new CoalescedRefresh(read,vi.fn());const pending=queue.runNow();await Promise.resolve();queue.request();queue.stop();finish();await pending;await vi.runAllTimersAsync();expect(read).toHaveBeenCalledOnce();
+});

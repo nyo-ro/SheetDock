@@ -1,22 +1,30 @@
-// イベントのまとまりを一回の取得に集約。取得中の要求は次の一回へ持ち越す。
+import { diagnose, measured } from "../diagnostics";
+// 初回・手動・イベント取得を同じキューで実行。処理中の要求は後続一回へ。
 export class CoalescedRefresh {
   private timer?: ReturnType<typeof setTimeout>;
-  private dirty = false;
-  private running = false;
-  private stopped = false;
-  constructor(private readonly refresh: () => Promise<void>, private readonly onError: (error: unknown) => void, private readonly delay = 150) {}
-  request(): void {
-    if (this.stopped) return;
-    this.dirty = true;
-    if (!this.running && this.timer === undefined) this.timer = setTimeout(() => { this.timer = undefined; void this.flush(); }, this.delay);
+  private dirty=false;
+  private flight?:Promise<void>;
+  private stopped=false;
+  constructor(private readonly refresh:()=>Promise<void>,private readonly onError:(error:unknown)=>void,private readonly delay=150,private readonly label="refresh"){}
+  request():void {
+    if(this.stopped)return;diagnose(this.label+".request");if(this.flight || this.timer!==undefined)diagnose(this.label+".coalesced");this.dirty=true;
+    this.schedule();
   }
-  private async flush(): Promise<void> {
-    if (this.stopped || !this.dirty) return;
-    this.dirty = false; this.running = true;
-    try { await this.refresh(); } catch (error) { if (!this.stopped) this.onError(error); }
-    finally { this.running = false; if (this.dirty && !this.stopped) this.request(); }
+  private schedule():void {if(!this.flight && this.timer===undefined)this.timer=setTimeout(()=>{this.timer=undefined;void this.flush();},this.delay);}
+  runNow():Promise<void>{
+    if(this.stopped)return Promise.resolve();diagnose(this.label+".request");this.dirty=true;
+    if(this.timer!==undefined){clearTimeout(this.timer);this.timer=undefined;}
+    return this.flight ?? this.flush();
   }
-  stop(): void { this.stopped = true; this.dirty = false; if (this.timer !== undefined) clearTimeout(this.timer); }
+  private flush():Promise<void>{
+    if(this.stopped || !this.dirty)return Promise.resolve();
+    this.dirty=false;
+    this.flight=Promise.resolve().then(()=>{if(!this.stopped)return measured(this.label,this.refresh);})
+      .catch(error=>{if(!this.stopped)this.onError(error);})
+      .finally(()=>{this.flight=undefined;if(this.dirty && !this.stopped)this.schedule();});
+    return this.flight;
+  }
+  stop():void {this.stopped=true;this.dirty=false;if(this.timer!==undefined)clearTimeout(this.timer);diagnose(this.label+".stop");}
 }
 // 開始/終了要求を直列化。登録解除失敗時は再登録を禁止し二重登録を避ける。
 export class SubscriptionLifecycle {

@@ -1,4 +1,4 @@
-import { WorkbookState, moveRestriction, stateSignature } from "../domain/workbookState";
+import { WorkbookState, moveRestriction, stateSignature, matchesMoveBaseline } from "../domain/workbookState";
 import { groupOrder } from "../domain/movePlan";
 import { loadWorkbookState } from "./workbookState";
 import { withExcelLock } from "./serial";
@@ -10,7 +10,7 @@ export async function reorderWorksheet(baseline: WorkbookState, id: string, boun
       const state=await Excel.run(async context=>{
         const current=await loadWorkbookState(context);
         const blocked=moveRestriction(current);if(blocked)throw new Error(blocked);
-        if(!stillValid() || stateSignature(current)!==stateSignature(baseline)) throw new Error("ドラッグ開始後にブックやシートの状態が変わりました。移動を中止しました。");
+        if(!stillValid() || !matchesMoveBaseline(baseline,current)) throw new Error("ドラッグ開始後にブックやシートの状態が変わりました。移動を中止しました。");
         const target=current.sheets.find(s=>s.id===id);
         if(!target)throw new Error("移動対象のシートが見つかりません。");
         if(target.protected)throw new Error("保護されたシートの移動には対応していません。");

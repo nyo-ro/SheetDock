@@ -1,7 +1,7 @@
 import { Mock, beforeEach, afterEach, expect, it, vi } from "vitest";
 import { reorderWorksheet } from "../src/excel/reorderWorksheet";
 import { loadWorkbookState } from "../src/excel/workbookState";
-import { moveRestriction } from "../src/domain/workbookState";
+import { moveRestriction, dragRestriction } from "../src/domain/workbookState";
 import { workbook } from "./production-fixture";
 vi.mock("../src/excel/workbookState",()=>({loadWorkbookState:vi.fn()}));
 let current=workbook();let write:Mock<(id:string,position:number)=>void>;let sync:Mock<()=>Promise<void>>;
@@ -33,4 +33,29 @@ it("アクティブ状態が不明なら拒否",()=>{current.activeId=null;expec
 it.each([["d",1,["a","d","b","c","e"]],["b",3,["a","c","b","d","e"]],["b",4,["a","c","d","b","e"]]] as [string,number,string[]][])("検索UIの全体境界で%sを移動し対象外を保持",async(id,gap,order)=>{
  current.sheets=["a","b","c","d","e"].map((id,position)=>({...current.sheets[0],id,name:id,position,isActive:id==="a"}));current.totalSheets=5;
  const result=await reorderWorksheet(structuredClone(current),id,gap);expect(result.error).toBeUndefined();expect(result.state?.sheets.map(s=>s.id)).toEqual(order);expect(write).toHaveBeenCalledOnce();
+});
+
+function displayBaseline(){const state=workbook();state.totalSheets=null;state.readPurpose="display";return state;}
+it("表示用の総数未確認baselineからも厳密な確認成功後だけ移動する",async()=>{
+ const baseline=displayBaseline();expect(dragRestriction(baseline)).toBeNull();expect(moveRestriction(baseline)).not.toBeNull();
+ const result=await reorderWorksheet(baseline,"b",0);expect(result.error).toBeUndefined();expect(write).toHaveBeenCalledExactlyOnceWith("b",0);expect(loadWorkbookState).toHaveBeenCalledTimes(2);expect(result.state?.totalSheets).toBe(3);
+});
+it.each([null,4,2,NaN])("表示からの移動でも直前の総数%sなら変更を禁止",async total=>{
+ current.totalSheets=total;const result=await reorderWorksheet(displayBaseline(),"b",0);expect(result.error).toContain("混在");expect(write).not.toHaveBeenCalled();
+});
+it.each(["readOnly","structureProtected"] as const)("表示からの移動でも直前の%sを拒否",async key=>{
+ current[key]=true;const result=await reorderWorksheet(displayBaseline(),"b",0);expect(result.error).toBeTruthy();expect(write).not.toHaveBeenCalled();
+});
+it.each(["name","position","visibility","protected"] as const)("表示baselineの対象%s変更を検出して中止",async key=>{
+ const baseline=displayBaseline();if(key==="name")current.sheets[1].name="renamed";
+ if(key==="position"){write("b",0);write.mockClear();}if(key==="visibility")current.sheets[1].visibility="Hidden";if(key==="protected")current.sheets[1].protected=true;
+ const result=await reorderWorksheet(baseline,"b",0);expect(result.error).toBeTruthy();expect(write).not.toHaveBeenCalled();
+});
+it("表示baselineからの移動後に総数不明なら成功扱いせず再取得する",async()=>{
+ vi.mocked(loadWorkbookState).mockResolvedValueOnce(workbook()).mockImplementation(async()=>({...structuredClone(current),totalSheets:null}));
+ const result=await reorderWorksheet(displayBaseline(),"b",0);expect(write).toHaveBeenCalledOnce();expect(result.error).toContain("移動結果を確認できません");expect(result.state?.totalSheets).toBeNull();expect(loadWorkbookState).toHaveBeenCalledTimes(3);
+});
+it("総数確認を試みて失敗した状態は表示用と混同せずドラッグを禁止",()=>{
+ const unknown=workbook();unknown.totalSheets=null;expect(dragRestriction(unknown)).not.toBeNull();
+ const mixed=displayBaseline();mixed.sheets[1].position=4;expect(dragRestriction(mixed)).not.toBeNull();
 });

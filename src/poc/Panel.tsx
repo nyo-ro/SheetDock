@@ -1,3 +1,4 @@
+import { diagnose } from "../diagnostics";
 import { useEffect, useRef, useState } from "react";
 import { ensureExcelReady } from "../excel/environment";
 import { withExcelLock } from "../excel/serial";
@@ -34,18 +35,20 @@ export function Panel() {
   const scheduler = useRef<CoalescedRefresh>();
   async function refresh() {
     await ensureExcelReady();
+    if(!alive.current)return;
     await withExcelLock(async () => {
+      if(!alive.current)return;
       const current = await observeBook();
       if (!alive.current) return;
       setSnapshot(current); setRefreshCount(count => count+1);
-      publishSnapshot({sheets:current.activeId ? current.sheets : [],error:current.activeId ? undefined : "アクティブシートを確認できません。PoC観測結果を確認してください。"});
+      // 観測だけでは通常UIに再取得を要求しない。各UIが同じイベントを購読する。
     });
   }
   useEffect(() => {
-    alive.current = true;
+    alive.current = true;diagnose("poc.init");
     const queue = new CoalescedRefresh(refresh, error => {
-      if (alive.current) { setFault(JSON.stringify(describeError(error))); publishSnapshot({sheets:[],error:"自動同期に失敗しました。手動更新してください。"}); }
-    });
+      if (alive.current) { setFault(JSON.stringify(describeError(error))); }
+    },150,"poc.refresh");
     scheduler.current = queue;
     const removeListener = listenEvents(record => { setEvents(rows => [...rows.slice(-149),record]); queue.request(); });
     const focus = () => { if (document.visibilityState === "visible") queue.request(); };
@@ -53,7 +56,7 @@ export function Panel() {
     const enabledFocus = () => { if (autoRef.current) focus(); };
     window.addEventListener("focus",enabledFocus); document.addEventListener("visibilitychange",enabledFocus);
     return () => {
-      alive.current = false; queue.stop(); removeListener(); window.removeEventListener("focus",enabledFocus); document.removeEventListener("visibilitychange",enabledFocus);
+      alive.current = false;diagnose("poc.dispose"); queue.stop(); removeListener(); window.removeEventListener("focus",enabledFocus); document.removeEventListener("visibilitychange",enabledFocus);
       void eventLifecycle.setEnabled(false).catch(error => console.error("SheetDock PoC event cleanup failed",error));
     };
   }, []);
@@ -64,7 +67,9 @@ export function Panel() {
     finally { lock.current = false; if (alive.current) setBusy(false); }
   }
   async function toggleAuto(value: boolean) {
-    await ensureExcelReady(); await eventLifecycle.setEnabled(value);
+    await ensureExcelReady(); if(!alive.current)return;
+    await eventLifecycle.setEnabled(value);
+    if(!alive.current){await eventLifecycle.setEnabled(false);return;}
     autoRef.current = value; setAuto(value); if (value) scheduler.current?.request();
   }
   function prepare() {

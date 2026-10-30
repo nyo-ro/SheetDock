@@ -15,8 +15,9 @@ export async function readWorksheets(): Promise<SheetInfo[]> {
   }));
 }
 
-export async function activateWorksheet(id: string): Promise<void> {
+export async function activateWorksheet(id: string, valid:()=>boolean=()=>true): Promise<void> {
   await withExcelLock(() => Excel.run(async context => {
+    if(!valid())throw new Error("終了・中断した操作です。");
     const sheet = context.workbook.worksheets.getItemOrNullObject(id);
     sheet.load("id,visibility");
     await context.sync();
@@ -24,6 +25,7 @@ export async function activateWorksheet(id: string): Promise<void> {
     if (sheet.visibility !== "Visible") {
       throw new Error("非表示シートには切り替えられません。表示状態は変更していません。");
     }
+    if(!valid())throw new Error("終了・中断した操作です。");
     sheet.activate();
     await context.sync();
     const active = context.workbook.worksheets.getActiveWorksheet();

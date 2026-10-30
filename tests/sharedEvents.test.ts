@@ -13,3 +13,9 @@ it("登録状態不明なら重複を避け再登録を拒否",async()=>{const r
 it("解除失敗後は再登録しない",async()=>{const register=vi.fn(async()=>async()=>{throw new Error("offline");});const hub=new SharedEvents(register);const release=await hub.subscribe(vi.fn());await expect(release()).rejects.toThrow();await expect(hub.subscribe(vi.fn())).rejects.toThrow("状態が不明");expect(register).toHaveBeenCalledOnce();});
 
 it("再登録に一度失敗しても既存購読を保って再試行",async()=>{let emit!:(event:string)=>void;const listener=vi.fn();const register=vi.fn(async(callback:(event:string)=>void)=>{emit=callback;return async()=>{};});const hub=new SharedEvents(register);const release=await hub.subscribe(listener);register.mockRejectedValueOnce(new Error("offline"));await expect(hub.rebind()).rejects.toThrow("offline");await hub.rebind();emit("recovered");expect(listener).toHaveBeenCalledWith("recovered");expect(register).toHaveBeenCalledTimes(3);await release();});
+
+it("登録完了待ちの終了と再表示を直列化し一つだけ登録を残す",async()=>{
+ let finish!:(dispose:()=>Promise<void>)=>void;const dispose=vi.fn(async()=>{});const register=vi.fn(async():Promise<()=>Promise<void>>=>dispose).mockImplementationOnce(()=>new Promise(r=>{finish=r;}));const hub=new SharedEvents(register);
+ const first=hub.subscribe(vi.fn());await Promise.resolve();const closing=first.then(release=>release());finish(dispose);await closing;
+ const release=await hub.subscribe(vi.fn());expect(register).toHaveBeenCalledTimes(2);expect(dispose).toHaveBeenCalledTimes(1);await release();expect(dispose).toHaveBeenCalledTimes(2);
+});

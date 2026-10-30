@@ -2,10 +2,13 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { publishSnapshot } from "../src/state/snapshotBus";
+import { eventLifecycle } from "../src/poc/events";
 import { Panel } from "../src/poc/Panel";
 import { ensureExcelReady } from "../src/excel/environment";
 import { applyAction, observeBook } from "../src/poc/officeAdapter";
 import { book, memoryAdapter } from "./poc-fixtures";
+vi.mock("../src/state/snapshotBus",()=>({publishSnapshot:vi.fn()}));
 vi.mock("../src/excel/environment",()=>({ensureExcelReady:vi.fn(async()=>{})}));
 vi.mock("../src/poc/officeAdapter",()=>({observeBook:vi.fn(),applyAction:vi.fn()}));
 vi.mock("../src/poc/events",()=>({eventSets:{},listenEvents:()=>()=>{},eventLifecycle:{setEnabled:vi.fn(async()=>{})}}));
@@ -121,4 +124,14 @@ it("名前選択だけで複数移動の計画・確認・実行ができる",as
  const dialog=await screen.findByRole("dialog");expect(dialog.textContent).toContain("Sheet2 → Sheet1 → Sheet3");expect(applyAction).not.toHaveBeenCalled();
  await user.click(within(dialog).getByRole("button",{name:"実行"}));await screen.findByText(/"orderMatches": true/);
  expect((await adapter.read()).sheets.map(s=>s.name)).toEqual(["Sheet2","Sheet1","Sheet3"]);
+});
+
+it("Office初期化待ちで閉じたPoCは後からイベントを再登録しない",async()=>{
+ let finish!:()=>void;vi.mocked(ensureExcelReady).mockImplementationOnce(()=>new Promise<void>(r=>{finish=r;}));
+ render(<Panel/>);fireEvent.click(screen.getByLabelText("イベント自動同期を検証"));cleanup();
+ await act(async()=>finish());expect(eventLifecycle.setEnabled).not.toHaveBeenCalledWith(true);
+});
+
+it("読み取り専用のPoC観測は通常UIに追加取得を要求しない",async()=>{
+ render(<Panel/>);fireEvent.click(screen.getByRole("button",{name:"観測・再取得（変更なし）"}));await waitFor(()=>expect(observeBook).toHaveBeenCalledOnce());expect(publishSnapshot).not.toHaveBeenCalled();
 });
