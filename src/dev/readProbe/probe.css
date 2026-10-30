@@ -1,0 +1,7 @@
+.read-probe, .probe-launcher { font-family: "Segoe UI", sans-serif; font-size: 14px; padding: 12px; color: #182b29; background: #fff; }
+.read-probe h1 { font-size: 20px; } .read-probe h2 { font-size: 16px; }
+.read-probe label { display: block; margin: 8px 0; } .read-probe button, .probe-launcher button { margin: 4px 4px 4px 0; padding: 6px; }
+.read-probe fieldset { margin: 12px 0; } .read-probe select, .read-probe textarea { display: block; width: 100%; box-sizing: border-box; }
+.read-probe input[type=number] { width: 64px; margin-left: 8px; }
+.read-probe [role=alert] { padding: 10px; background: #fff0e8; color: #7c2500; }
+.probe-log { padding-left: 18px; font-size: 11px; overflow-wrap: anywhere; } .probe-launcher { border-top: 1px solid #aaa; }

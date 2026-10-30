@@ -1,53 +1,47 @@
 # テストと制約
 
-最新の実機報告・検索中移動・複数移動PoCの手順は[こちら](filtered-reorder-multi-poc.md)。以下の旧確認表は初期段階の履歴で、現在の確認済み範囲はリンク先を優先する。
+現在の確認済み範囲・未確認範囲は[安定化作業の到達点](stabilization-status.md)を参照する。過去の19件、87件、197件等のテスト結果は各Phaseの履歴であり、現在の件数ではない。
 
 ## 自動検証
 
-`npm run typecheck`、`npm test`、`npm run build`、`npm run validate`を実行する。
+Node.js 24環境で以下を実行する。Development出力を別ディレクトリにし、Productionの検査対象を上書きしない。
 
-単体テストは検索・ソートの純粋関数、Office初期化、Excel APIをモックした一覧取得・操作直前の再検証・操作後の確認を対象とする。Office.jsやExcel自体の挙動を保証するものではない。
+```powershell
+npm run typecheck
+npm test
+npm run build -- --json .local-tools/final-stabilization-production-stats.json
+npx --no-install webpack --mode development --output-path .local-tools/final-stabilization-dev-build --json .local-tools/final-stabilization-development-stats.json
+npm run validate
+```
 
-## Excel実機の確認表
+最終再検証の結果は[記録](stabilization-status.md#自動検証)を参照。テストは純粋関数、React UI、Office.jsモック、取得・変更・キューの結合を含む。Excelホストの動作やAPI応答時間を保証しない。
 
-専用の一時ブックだけを使用する。通常シート「概要」「Budget 2026」「budget 2025」「売上」を作成し、任意の追加シートをHidden／VeryHiddenにしたブックを検証担当者が準備する。アドイン自身はシートの作成・表示状態変更を行わない。
+Productionのwebpack統計に`src/dev`・`src/poc`モジュールがなく、生成JavaScriptに比較モードや診断公開APIの識別文字列がないことを確認する。Developmentでは該当モジュールが含まれることも確認する。
 
-| 項目 | 確認する結果 | 今回 |
-|---|---|---|
-| リボン・タスクペイン | ホームのSheetDockボタンから日本語UIが開く | 未検証 |
-| 一覧取得 | 名前・順序・非表示状態がExcelと一致 | 未検証 |
-| アクティブ表示 | 現在の表示シートだけにマーク | 未検証 |
-| 切り替え | 表示シートをクリックしてExcel側と一覧が一致 | 未検証 |
-| Hidden／VeryHidden | クリック不可、表示状態が変わらない | 未検証 |
-| 検索・クリア | 大小文字不問の部分一致、クリアで全件。Excel側の状態不変 | 未検証 |
-| 手動更新 | Excel側の名前変更・移動・追加・削除を反映 | 未検証 |
-| 取得後に対象を削除 | 切替でエラー、成功表示をしない、更新で復旧 | 未検証 |
-| 取得後に対象を非表示化 | 操作直前に拒否。再表示しない | 未検証 |
-| API・接続失敗 | エラー表示。古いアクティブ表示を消す | 未検証 |
-| 高速連続クリック | API操作が重複せず、処理中は無効 | 未検証 |
-| 狭いタスクペイン・長い名前 | ボタンと名前が操作可能。Tab/Enterで操作可能 | 未検証 |
+## Excel for the webでの再確認
 
-今回のWindows環境のExcelは15.0.5603.1000（Office 2013）でExcelApi 1.17を満たさない。Microsoft 365実機を利用できず、信頼ストア変更・サイドロード・ブック操作は行っていない。Mac・Webも未検証。
+使い捨ての検証用ブックを使う。既存の証明書・サイドロード設定で`npm run dev`を起動し、Excelのブラウザータブ全体を再読み込みする。通常画面を使用し、PoCのイベント観測はOFFにする。
 
-## 既知の制約と次の検証
+1. 一覧とアクティブ表示を確認し、Excel側でシートを切り替える。
+2. 名前編集を開始し約2秒後にEsc。続いて名前変更を5〜10回確定し、最終名に追いつくことを確認する。
+3. 通常・検索中の単一シート移動を行い、Excelの順序と照合する。検索条件が維持されることも確認する。
+4. ドラッグのキャンセル、ペインを閉じて再表示、シート追加・削除を確認する。今回の最新報告には再表示・追加・削除の個別再確認は含まれていない。
+5. 後続の安全性検証では構成保護・読み取り専用・グラフシート混在の専用ブックで、変更が拒否されることを確認する。
 
-- アクティブ表示は最後に取得した時点。イベント同期は未実装。
-- 独立したグラフシートは一覧対象外。混在ブック、特にグラフシートがアクティブの場合のAPI挙動は未確認。APIが失敗した場合はエラーとして表示する。
-- 操作前の再検証とExcel操作はトランザクションではない。確認後にシートが削除・変更された場合はAPIエラーを表示する。非表示への変更コードは持たない。
-- 切替後の一覧再取得に失敗した場合、Excel側の切替は既に成立している可能性がある。成功と断定せず、一覧を消して手動更新を促す。
-- ブック保護・読み取り専用・共同編集・大量シート・複数ウィンドウでの挙動は未確認。
-- UIは明色固定。テーマ追従、高DPIの実機品質、スクリーンリーダー評価は後続。
-- Microsoftテンプレートの仮アイコンを使用。公開前にSheetDock用へ差し替え、公開URL、サポート、プライバシーポリシー、AppSource条件を整備する。
-- 追加・削除・複製・名前変更・タブ色・表示状態変更・複数選択・ドラッグ・一括操作・設定保存・複数ウィンドウ・自動更新/起動は実装していない。
+未応答になったら追加の変更を止め、DevToolsで`localhost:3000`のSheetDockフレームを選び、次の読み取りコマンドでログを保存する。PowerShellやExcel本体のtopフレームでは実行しない。
 
-## 今回の自動検証結果
+```javascript
+copy(JSON.stringify(window.sheetDockDiagnostics.snapshot(), null, 2))
+```
 
-型チェック、19件の単体テスト、productionビルド、公式マニフェスト検証、リソース参照、localhost HTTPS配信は成功。これはExcel実機での成功を意味しない。
+発生手順・操作時刻・PoC観測ON/OFFを添える。未応答APIのロックは強制解除しない。保存後にExcelのブラウザータブ全体を再読み込みする。
 
-実行用依存のnpm監査は0件。開発用サイドロードCLIの推移依存にHigh 8件が残り、通常のaudit fixでは解消しない。実機確認の前にツール更新と監査を再確認する。詳細は[移行記録](sheetdock-web-phase1a.md)を参照。
+## 高度な操作と調査用モード
 
-## Phase 1-B②での更新
+- [通常表示と安全確認の分離](normal-display-read.md)：総数未確認の表示から書き込みを許可しない。
+- [複数移動PoCの具体例](filtered-reorder-multi-poc.md)：通常UIの複数選択は未実装。
+- [PoCチェックリスト](sheetdock-web-phase1b.md)：明示的な有効化・確認を経て専用ブックだけで使用する。
+- [A/B/C独立比較](active-read-comparison.md)：開発専用、1実行環境1試験。実機比較は未実施。
+- [初期環境・監査の履歴](sheetdock-web-phase1a.md)：依存の監査結果は当時の値。今回npm監査・依存更新は行っていない。
 
-上記の「今回」はPhase 1-A作業時点の記録。現在、Phase 1-Aの基本機能5項目についてユーザーからWeb版Excelでの成功報告を受けています。高度な操作の結果と最新のテスト件数は[sheetdock-web-phase1b.md](sheetdock-web-phase1b.md)を参照してください。
-
-最新の通常UIの自動同期・単一ドラッグのテスト結果と実機手順は[worksheet-sync-reorder.md](worksheet-sync-reorder.md)を参照してください。
+Windows Microsoft 365・Mac、長時間使用、共同編集、複数ウィンドウ、アクセシビリティ・高DPI等の品質確認は残る。公開構成とAppSource準備も未完了。
