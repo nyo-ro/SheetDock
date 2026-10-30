@@ -1,6 +1,6 @@
 # SheetDock Web Phase 1-B②：高度なOffice.js APIの技術検証
 
-調査・作成日：2026-10-27。基準コミット：`2d1b32c0c3e4c43ab41b63b3593e47e359b89228`。
+調査・作成日：2026-10-27。基準コミット：`29eb105e5899aeb276fa697f74c6ef287ce40e40`。
 
 ## 1. 結果の位置付け
 
@@ -147,7 +147,7 @@ PoCの失敗注入は`SyntheticFailure`と表示される人工的な制御フ�
 2. 前回の開発用証明書設定済み環境でPowerShellを開き、以下を実行する。今回は証明書の再登録は行っていない。
 
 ```powershell
-cd .\SheetDock  # Run from the parent of your checkout
+cd .\SheetDock  # 配置先の親ディレクトリから実行
 $env:PATH = "$PWD\.local-tools\node-v24.22.1-win-x64;" + $env:PATH
 npm.cmd run dev
 ```
@@ -312,7 +312,7 @@ npm監査は以前からの開発用推移依存High 8件が継続。今回の�
 前回の登録と証明書が残っていれば再登録は不要。PowerShellで以下を実行し、Web版Excelのページを再読み込みしてSheetDockを開く。既にサーバーが起動中なら、そのターミナルでCtrl+Cしてから起動し直す。
 
 ```powershell
-cd .\SheetDock  # Run from the parent of your checkout
+cd .\SheetDock  # 配置先の親ディレクトリから実行
 $env:PATH = "$PWD\.local-tools\node-v24.22.1-win-x64;" + $env:PATH
 npm.cmd run dev
 ```

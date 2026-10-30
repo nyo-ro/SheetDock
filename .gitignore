@@ -12,3 +12,16 @@ coverage/
 .env.*
 .vscode/*.local.json
 .DS_Store
+
+# Local credentials, certificates, and packaged artifacts
+.npmrc
+*.crt
+*.cer
+*.der
+*.p7b
+*.p7c
+*.jks
+*.keystore
+artifacts/
+*.zip
+*.msi

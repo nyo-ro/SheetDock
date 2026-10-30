@@ -1,5 +1,7 @@
 # SheetDock
 
+**開発途中のソースコードです。正式リリース・配布用アドインではありません。** パッケージやマニフェストの`1.0.0`は開発中の設定値で、正式リリースを示しません。
+
 TypeScript・React・Office.jsで新規開発する、Excel向けOffice Web Add-inです。日本語のタスクペインからワークシートを確認・切り替えできます。自動同期と単一シートのドラッグ移動を通常UIへ統合しています。AppSource公開用の構成は未整備です。
 
 ## 実装済み
@@ -12,9 +14,21 @@ TypeScript・React・Office.jsで新規開発する、Excel向けOffice Web Add-
 - 手動更新、読み込み中表示、API失敗・未対応環境のエラー表示
 - Hidden／VeryHiddenは状態のみ表示し、クリックによる切り替え・再表示は行わない
 
-## 開発
+## 対応環境
 
-Node.js 24 LTS、npm、VS Code、ExcelApi 1.17に対応するExcelが必要です。
+ExcelApi 1.17に対応するExcelが必要です。起動時にもAPI対応状況を確認します。
+
+| 環境 | 現在の確認状況 |
+|---|---|
+| Excel for the web | 基本機能、自動同期、通常・検索中の単一移動を実機確認済み |
+| Microsoft 365 Excel（Windows） | 対応を目指すが実機未検証 |
+| Microsoft 365 Excel（Mac） | 対応を目指すが実機未検証 |
+
+Office.js公式CDNへの通信が必要です。開発中のマニフェストは`https://localhost:3000`を参照し、AppSourceや常設ホスティングから利用する構成ではありません。
+
+## 起動・検証方法
+
+Node.js 24とnpmを用意し、ターミナルでこのリポジトリのルートへ移動します。VS Codeは任意です。
 
 ```sh
 npm ci
@@ -24,7 +38,16 @@ npm run build
 npm run validate
 ```
 
-HTTPS証明書の準備後、`npm run dev`で`https://localhost:3000`を起動します。環境を変更する証明書の信頼登録・サイドロードは明示的に実行する手順に分けています。
+初回は[開発環境の手順](docs/development.md)に従ってlocalhost用HTTPS証明書を準備し、開発サーバーを起動します。証明書の信頼登録は利用者が明示的に実行する環境変更です。
+
+```sh
+npm run certs  # 初回のみ。開発用証明書を作成・信頼登録する
+npm run dev
+```
+
+既存の証明書を利用する場合は`npm run certs`は不要です。Excel for the webで使い捨ての検証ブックを開き、アドイン管理のアップロードからルートの`manifest.xml`を指定して「SheetDockを開く」を選びます。サーバー起動だけではアドイン登録は完了しません。テナントのポリシーでアップロードが許可されない場合があります。
+
+ブラウザーから`https://localhost:3000/help.html`へ証明書警告なしでアクセスできることを確認してください。再検証は[testing.md](docs/testing.md)を参照。Developmentビルド単体は`npx --no-install webpack --mode development --output-path .local-tools/development-build`で確認できます。Productionビルドは最適化された開発成果物であり、公開可能な配布物を意味しません。
 
 - [安定化作業の到達点・実機結果・次の作業](docs/stabilization-status.md)
 - [アクティブ取得停止の調査・バッチ化（履歴）](docs/active-read-batching.md)
@@ -53,6 +76,8 @@ manifest.xml    Excel専用の開発用XMLマニフェスト
 tests/         TypeScript単体テスト
 ```
 
+## 未実装機能・既知の制約
+
 通常UIでの追加・削除・複製・名前変更、表示状態変更、タブ色、複数選択/複数移動、一括操作、設定保存、自動起動は未実装です。検索中も、表示シートの境界をブック全体の位置へ変換して単一ドラッグ移動できます。グラフシート等の混在、または総シート数を確認できない場合も移動できません。複数ウィンドウの実機検証は未完了です。
 
 ユーザーの最新のExcel for the web実機検証では、名前編集開始から約2秒後のEsc、名前変更5〜10回、通常・検索中の単一ドラッグ移動がすべて成功し、今回の再現手順ではAPI応答停止が発生しませんでした。根本原因の完全特定や全条件での解消は意味しません。以前の一覧・切替・検索・自動同期・ドラッグキャンセル・Hidden/VeryHidden表示・PoC単一移動の成功記録も維持します。
@@ -60,6 +85,8 @@ tests/         TypeScript単体テスト
 複数移動PoC、構成保護・読み取り専用・グラフシート混在時の拒否、途中失敗、PoCキャンセル・結果表示、独立A/B/C比較、長時間使用、Windows Microsoft 365・Macは未検証です。グラフシートが一覧に表示されないことは確認済みです。詳しい確認範囲は[現在の状況](docs/stabilization-status.md)を参照してください。
 
 履歴資料の`docs/sheetdock-phase1.md`と`docs/sheetdock-phase2a.md`は、採用を終了した旧VSTO構成の記録です。現在の開発手順には使用しません。
+
+開発用ツールの依存には、2026-10-30の`npm audit`でHigh 8件の指摘が残っています。実行用依存（`--omit=dev`）は0件です。依存更新と再検証は残課題で、今回自動修正は行っていません。
 
 ## 開発専用の技術検証UI（Phase 1-B②）
 
@@ -74,3 +101,7 @@ tests/         TypeScript単体テスト
 通常画面の「読み取り比較モードを開く（再読み込み）」から、通常UI・PoCを起動しないA/B/C比較へ移れます。1実行環境につき1試験、診断JSONは比較画面内でコピーできます。[手順・制約・結果の読み方](docs/active-read-comparison.md)を参照してください。実機結果は未確認です。
 
 通常表示の取得と移動前の安全確認の分離については[最新の変更・実機手順](docs/normal-display-read.md)を参照してください。表示更新では総数を取得せず、ドロップ後の厳密な確認に成功した場合だけ移動します。
+
+## ライセンス
+
+SheetDockは[MIT License](LICENSE)で提供します。第三者由来素材については[ライセンス通知](THIRD_PARTY_NOTICES.md)も参照してください。

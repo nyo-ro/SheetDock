@@ -2,7 +2,7 @@
 
 > 本文は調査時点の経緯・判断の記録です。「未コミット」「今回はコミットしない」「未検証」等は当時の状態を示します。最新の実機確認範囲と残課題は[安定化作業の到達点](stabilization-status.md)を参照してください。A/B/C独立比較自体は引き続き実機未検証です。
 
-調査日：2026-10-30。基準HEAD：`7aa14579d171651d37444ddd9a456cbb6450b9ac`。既存の未コミット変更を保持する。今回はコミットしない。Excel for the webでの比較結果は未取得であり、応答停止の原因特定・解消を意味しない。
+調査日：2026-10-30。基準HEAD：`46dee0351dabb0e91033b7f23679e5bae695d0d6`。既存の未コミット変更を保持する。今回はコミットしない。Excel for the webでの比較結果は未取得であり、応答停止の原因特定・解消を意味しない。
 
 関連記録：[自動同期・実機ログ](sync-stability-ribbon.md)、[初期調査](rename-sync-investigation.md)、[取得バッチ化](active-read-batching.md)。
 
@@ -65,7 +65,7 @@ A・Bでは`getActiveWorksheet()`を呼ばない。Bは画面にある候補か�
 1. SheetDockの既存開発環境でサーバーを起動する。証明書の新規インストールやマニフェスト再登録は今回の変更には不要。
 
    ```powershell
-   Set-Location .\SheetDock  # Run from the parent of your checkout
+   Set-Location .\SheetDock  # 配置先の親ディレクトリから実行
    $env:PATH = "$PWD\.local-tools\node-v24.22.1-win-x64;" + $env:PATH
    npm.cmd run dev
    ```

@@ -2,7 +2,7 @@
 
 > 本文は調査時点の経緯・判断の記録です。「未コミット」「今回はコミットしない」「未検証」等は当時の状態を示します。最新の実機確認範囲と残課題は[安定化作業の到達点](stabilization-status.md)を参照してください。A/B/C独立比較自体は引き続き実機未検証です。
 
-調査日：2026-10-28。基準HEAD：`7aa14579d171651d37444ddd9a456cbb6450b9ac`。開始時作業ツリーはクリーン。Sheasideは変更していない。
+調査日：2026-10-28。基準HEAD：`46dee0351dabb0e91033b7f23679e5bae695d0d6`。開始時作業ツリーはクリーン。Sheasideは変更していない。
 
 ## 結論と証拠の限界
 
@@ -71,7 +71,7 @@ api.run.*は今回の同期調査対象を計測する。Office.js内部の通�
 1. SheetDockディレクトリで既存環境の`npm.cmd run dev`を起動。NodeがPATHにない場合は次を利用する。
 
    ```powershell
-   Set-Location .\SheetDock  # Run from the parent of your checkout
+   Set-Location .\SheetDock  # 配置先の親ディレクトリから実行
    $env:PATH = "$PWD\.local-tools\node-v24.22.1-win-x64;" + $env:PATH
    npm.cmd run dev
    ```

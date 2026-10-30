@@ -3,7 +3,7 @@
 ## 前提
 
 - Node.js 24 LTS（Microsoft公式テンプレートのNode >=20 <25と整合）、npm、VS Code。
-- ExcelApi 1.17に対応するMicrosoft 365 Excel。公式対応表ではWindows Version 2302（Build 16130.20332）以上、Mac 16.70以上、Webは対応。実際にはランタイムのisSetSupportedで判定する。Windows、Mac、Webの実機確認は別途必要。
+- ExcelApi 1.17に対応するMicrosoft 365 Excel。公式対応表ではWindows Version 2302（Build 16130.20332）以上、Mac 16.70以上、Webは対応。実際にはランタイムのisSetSupportedで判定する。Windows・Macは実機未検証。Webの確認済み範囲は[現在の状況](stabilization-status.md)を参照。
 - Office.jsはMicrosoftの公式CDNから実行時に読み込む。CDNへの通信が必要。
 - このマニフェストはlocalhost開発用。公開用URL・AppSource登録は未設定。
 
@@ -54,7 +54,7 @@ CLIはMicrosoft公式`office-addin-debugging`を使用する。サーバーは�
 
 Webは専用の新規テストブックで、Excelのアドイン管理から「自分のアドインのアップロード」を選び`manifest.xml`を指定する。テナントのポリシーにより利用できないことがある。ブラウザーがlocalhost HTTPSへアクセスできる必要がある。
 
-MacはMicrosoftのMac向けサイドロード手順を利用する。証明書の信頼・マニフェスト配置先はWindowsと異なる。今回のMac・Webサイドロードは未検証。
+MacはMicrosoftのMac向けサイドロード手順を利用する。証明書の信頼・マニフェスト配置先はWindowsと異なる。Macは実機未検証。Webはユーザーによるサイドロードと基本機能の動作確認済み。
 
 ## 検証コマンド
 

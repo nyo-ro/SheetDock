@@ -2,7 +2,7 @@
 
 > 本文は調査時点の経緯・判断の記録です。「未コミット」「今回はコミットしない」「未検証」等は当時の状態を示します。最新の実機確認範囲と残課題は[安定化作業の到達点](stabilization-status.md)を参照してください。A/B/C独立比較自体は引き続き実機未検証です。
 
-作業日：2026-10-28。HEAD：`7aa14579d171651d37444ddd9a456cbb6450b9ac`。開始時から存在した前回の未コミット修正を保持して追加修正した。コミット、remote、push、タグ、リボン/manifestの変更、Sheaside変更は実施しない。
+作業日：2026-10-28。HEAD：`46dee0351dabb0e91033b7f23679e5bae695d0d6`。開始時から存在した前回の未コミット修正を保持して追加修正した。コミット、remote、push、タグ、リボン/manifestの変更、Sheaside変更は実施しない。
 
 ## 実機報告と原因の特定状況
 
@@ -63,7 +63,7 @@
 1. 既存の開発サーバーをSheetDockで起動。新規インストールは不要。
 
    ```powershell
-   Set-Location .\SheetDock  # Run from the parent of your checkout
+   Set-Location .\SheetDock  # 配置先の親ディレクトリから実行
    $env:PATH = "$PWD\.local-tools\node-v24.22.1-win-x64;" + $env:PATH
    npm.cmd run dev
    ```
@@ -140,7 +140,7 @@ SharedRuntime 1.1のサポートはWeb版Excel、Windows Excel Version 2002（Bu
 - マニフェスト検証成功。
 - Webpackモジュール一覧でProductionのPoCは0、Developmentは8モジュール。Productionの診断window APIも不在。
 - manifest.xml、public/commands.html、package.json、package-lock.jsonはHEADと一致。
-- コミットは作成せず、前回と今回の変更を未コミットで保持。HEADは7aa14579d171651d37444ddd9a456cbb6450b9acのまま。
+- コミットは作成せず、前回と今回の変更を未コミットで保持。HEADは46dee0351dabb0e91033b7f23679e5bae695d0d6のまま。
 
 これは純粋処理/React/Office.jsモックによる自動検証で、実Excelの連続改名や無応答の解消を保証しない。今回の実機チェックはユーザーによる再検証待ち。
 
