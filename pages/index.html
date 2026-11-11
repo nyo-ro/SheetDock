@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SheetDock — Excelアドイン開発版</title>
+  <style>
+    body{font-family:system-ui,sans-serif;line-height:1.8;color:#182632;background:#f6f8fa;margin:0}
+    main{max-width:48rem;margin:3rem auto;padding:0 1.5rem}h1{margin-bottom:0}a{color:#175b93}
+    .download{display:inline-block;padding:.7rem 1rem;background:#175b93;color:white;border-radius:.4rem;text-decoration:none}
+    .note{padding:1rem;border-left:4px solid #bc7917;background:#fff7e7}li{margin:.5rem 0}footer{margin-top:3rem;font-size:.9rem}
+  </style>
+</head>
+<body><main>
+  <h1>SheetDock</h1>
+  <p>Excelのワークシートを一覧・検索し、切り替え・並び替えできるタスクペインです。</p>
+  <p class="note"><strong>開発版です。</strong>正式リリース・AppSource配布ではありません。まず使い捨ての検証ブックで試してください。</p>
+  <p><a class="download" href="manifest.xml" download="SheetDock-manifest.xml">Excel登録用マニフェストをダウンロード</a></p>
+  <h2>Excel for the webで使う</h2>
+  <ol>
+    <li>上のボタンからXMLファイルを保存します。ローカルサーバー、Node.js、開発用証明書は不要です。</li>
+    <li>Excel for the webで検証用ブックを開き、<strong>ホーム → アドイン → その他のアドイン → 自分のアドインのアップロード</strong>からXMLを登録します。画面の名称は環境により異なります。</li>
+    <li>ホームの「SheetDockを開く」でタスクペインを表示します。このWebページを開くだけではExcelに登録されません。</li>
+  </ol>
+  <p>localhost開発版とは同じアドインIDです。開発版を登録済みの場合は、その登録を外してからPages版を登録してください。組織のポリシーでアップロードが許可されない場合は管理者への確認が必要です。</p>
+  <h2>機能と確認状況</h2>
+  <p>一覧・シート切り替え・名前検索・自動同期・通常／検索中の単一ドラッグ移動・手動更新を実装しています。ExcelApi 1.17が必要です。</p>
+  <p>これらの基本操作はlocalhost配信を使うExcel for the webで確認済みです。<strong>Pages配信でのExcel内動作、Windows版・Mac版は実機未検証</strong>です。</p>
+  <p>グラフシートは一覧対象外です。Hidden／VeryHiddenは状態表示のみ。複数選択・一括操作は通常画面に未実装です。保護・読み取り専用・構成を確認できないブックでは移動を拒否します。共同編集の完全な排他は保証しません。</p>
+  <p>自動同期が停止した場合の根本原因は完全には特定していません。今回の配信は、実機での確認や正式なサポートを代替するものではありません。</p>
+  <p><a href="https://github.com/nyo-ro/SheetDock/blob/main/docs/github-pages.md">詳しい登録・検証手順</a> · <a href="https://github.com/nyo-ro/SheetDock/issues">不具合の報告</a></p>
+  <footer><a href="https://github.com/nyo-ro/SheetDock">ソースコード</a> · <a href="https://github.com/nyo-ro/SheetDock/blob/main/LICENSE">MIT License</a></footer>
+</main></body></html>

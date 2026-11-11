@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: sheetdock-pages
@@ -16,6 +14,9 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      pages: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -27,22 +28,23 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Build production assets
-        run: npm run build
-      - name: Publish Pages manifest and landing page
+      - name: Type check and test
         run: |
-          cp manifest.pages.xml dist/manifest.xml
-          cp dist/help.html dist/index.html
-          touch dist/.nojekyll
-          if grep -R -n 'https://localhost:3000' dist/manifest.xml; then
-            echo "The Pages manifest must not contain localhost URLs."
-            exit 1
-          fi
+          npm run typecheck
+          npm test
+      - name: Build and verify Pages assets
+        run: npm run build:pages
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
   deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

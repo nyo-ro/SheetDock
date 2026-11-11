@@ -5,9 +5,11 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 // Based on the OfficeDev/Office-Addin-TaskPane-React configuration.
 module.exports = (_env, argv) => {
+  const pages = _env?.pages === true;
+  if (pages && argv.mode !== "production") throw new Error("Pages requires production mode.");
   const config = {
     entry: { taskpane: "./src/taskpane/index.tsx" },
-    output: { path: path.resolve(__dirname, "dist"), filename: "[name].[contenthash].js", clean: true },
+    output: { path: path.resolve(__dirname, "dist"), filename: "[name].[contenthash].js", publicPath: pages ? "/SheetDock/" : "auto", clean: true },
     devtool: argv.mode === "development" ? "source-map" : false,
     resolve: { extensions: [".tsx", ".ts", ".js"] },
     module: { rules: [
@@ -17,8 +19,13 @@ module.exports = (_env, argv) => {
     plugins: [
       new HtmlWebpackPlugin({ filename: "taskpane.html", template: "src/taskpane/taskpane.html" }),
       new CopyWebpackPlugin({ patterns: [
-        { from: "assets", to: "assets" }, { from: "public", to: "." },
-        { from: "manifest.xml", to: "manifest.xml" }
+        { from: "assets", to: "assets" },
+        { from: "public", to: ".", globOptions: { ignore: pages ? ["**/help.html"] : [] } },
+        { from: pages ? "manifest.pages.xml" : "manifest.xml", to: "manifest.xml" },
+        ...(pages ? [
+          { from: "pages/index.html", to: "index.html" },
+          { from: "pages/index.html", to: "help.html" }
+        ] : [])
       ] })
     ],
     performance: { maxAssetSize: 600000, maxEntrypointSize: 600000 }

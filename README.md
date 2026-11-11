@@ -2,7 +2,15 @@
 
 **開発途中のソースコードです。正式リリース・配布用アドインではありません。** パッケージやマニフェストの`1.0.0`は開発中の設定値で、正式リリースを示しません。
 
-TypeScript・React・Office.jsで新規開発する、Excel向けOffice Web Add-inです。日本語のタスクペインからワークシートを確認・切り替えできます。自動同期と単一シートのドラッグ移動を通常UIへ統合しています。AppSource公開用の構成は未整備です。
+TypeScript・React・Office.jsで新規開発する、Excel向けOffice Web Add-inです。日本語のタスクペインからワークシートを確認・切り替えできます。自動同期と単一シートのドラッグ移動を通常UIへ統合しています。AppSource公開用の構成は未整備です。GitHub Pagesでは開発版のタスクペインを配信します。
+
+## ローカルサーバーなしで試す
+
+[SheetDock開発版の案内ページ](https://nyo-ro.github.io/SheetDock/)から、[登録用マニフェスト](https://nyo-ro.github.io/SheetDock/manifest.xml)を保存してください。Excel for the webのアドイン管理でXMLをアップロードし、ホームの「SheetDockを開く」を選びます。利用だけならNode.js・証明書・ローカルサーバーは不要です。
+
+localhost版を登録済みの場合は同じアドインIDのため、開発版の登録を外してからPages版を登録します。組織の設定でアップロードが許可されない場合があります。詳しい画面操作と実機チェックは[GitHub Pagesの手順](docs/github-pages.md)を参照してください。
+
+**サイトが開けることと、Excel内でアドインが動くことは別の確認です。** これまでの成功記録はlocalhost配信のExcel for the webです。Pages配信でのExcel内動作は未検証なので、使い捨ての検証ブックで試してください。正式リリース・AppSource配布ではありません。
 
 ## 実装済み
 
@@ -24,9 +32,9 @@ ExcelApi 1.17に対応するExcelが必要です。起動時にもAPI対応状�
 | Microsoft 365 Excel（Windows） | 対応を目指すが実機未検証 |
 | Microsoft 365 Excel（Mac） | 対応を目指すが実機未検証 |
 
-Office.js公式CDNへの通信が必要です。開発中のマニフェストは`https://localhost:3000`を参照し、AppSourceや常設ホスティングから利用する構成ではありません。
+Office.js公式CDNへの通信が必要です。ローカル用`manifest.xml`は`https://localhost:3000`、Pages用`manifest.pages.xml`は`https://nyo-ro.github.io/SheetDock/`を参照します。AppSource登録は未実施です。
 
-## 起動・検証方法
+## ローカル開発・検証方法
 
 Node.js 24とnpmを用意し、ターミナルでこのリポジトリのルートへ移動します。VS Codeは任意です。
 
@@ -47,7 +55,7 @@ npm run dev
 
 既存の証明書を利用する場合は`npm run certs`は不要です。Excel for the webで使い捨ての検証ブックを開き、アドイン管理のアップロードからルートの`manifest.xml`を指定して「SheetDockを開く」を選びます。サーバー起動だけではアドイン登録は完了しません。テナントのポリシーでアップロードが許可されない場合があります。
 
-ブラウザーから`https://localhost:3000/help.html`へ証明書警告なしでアクセスできることを確認してください。再検証は[testing.md](docs/testing.md)を参照。Developmentビルド単体は`npx --no-install webpack --mode development --output-path .local-tools/development-build`で確認できます。Productionビルドは最適化された開発成果物であり、公開可能な配布物を意味しません。
+ブラウザーから`https://localhost:3000/help.html`へ証明書警告なしでアクセスできることを確認してください。再検証は[testing.md](docs/testing.md)を参照。Developmentビルド単体は`npx --no-install webpack --mode development --output-path .local-tools/development-build`で確認できます。`npm run build`はlocalhost用、`npm run build:pages`はPages用のProduction成果物を生成します。Pagesビルドはマニフェスト・静的ファイル参照・開発専用コードの除外も検査します。`npm run validate:pages`でPages用マニフェストを検証できます。配信成功は正式リリースやExcel実機検証の完了を意味しません。
 
 - [安定化作業の到達点・実機結果・次の作業](docs/stabilization-status.md)
 - [アクティブ取得停止の調査・バッチ化（履歴）](docs/active-read-batching.md)
